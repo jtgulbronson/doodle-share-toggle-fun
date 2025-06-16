@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Clock, Users, Lightbulb, Zap, Target, Layers } from "lucide-react";
+import { Clock, Users, Lightbulb, Zap, Target, Layers, LucideIcon } from "lucide-react";
 
 interface Exercise {
   id: string;
@@ -8,7 +8,7 @@ interface Exercise {
   description: string;
   duration: string;
   participants: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: LucideIcon;
 }
 
 interface ExerciseSelectorProps {
