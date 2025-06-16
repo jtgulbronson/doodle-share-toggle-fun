@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Toolbar } from "./Toolbar";
 import { ColorPicker } from "./ColorPicker";
+import { StrokeSizePicker } from "./StrokeSizePicker";
 import { toast } from "sonner";
 
 interface DrawingCanvasProps {
@@ -14,8 +15,11 @@ export const DrawingCanvas = ({ canvasId, isGroupMode }: DrawingCanvasProps) => 
   const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [activeColor, setActiveColor] = useState("#3B82F6");
-  const [activeTool, setActiveTool] = useState<"draw" | "rectangle" | "circle">("draw");
+  const [activeTool, setActiveTool] = useState<"pen" | "eraser" | "text" | "rectangle" | "circle">("pen");
+  const [strokeSize, setStrokeSize] = useState(3);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
+  const [isTextMode, setIsTextMode] = useState(false);
+  const [textInput, setTextInput] = useState("");
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -29,7 +33,7 @@ export const DrawingCanvas = ({ canvasId, isGroupMode }: DrawingCanvasProps) => 
 
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.lineWidth = 3;
+    ctx.lineWidth = strokeSize;
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
@@ -37,6 +41,12 @@ export const DrawingCanvas = ({ canvasId, isGroupMode }: DrawingCanvasProps) => 
     
     toast.success(`${isGroupMode ? "Group" : "Individual"} canvas ready!`);
   }, [isGroupMode]);
+
+  useEffect(() => {
+    if (context) {
+      context.lineWidth = strokeSize;
+    }
+  }, [strokeSize, context]);
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!context) return;
@@ -47,9 +57,15 @@ export const DrawingCanvas = ({ canvasId, isGroupMode }: DrawingCanvasProps) => 
     const y = e.clientY - rect.top;
     
     setStartPos({ x, y });
+
+    if (activeTool === "text") {
+      setIsTextMode(true);
+      return;
+    }
+    
     setIsDrawing(true);
     
-    if (activeTool === "draw") {
+    if (activeTool === "pen" || activeTool === "eraser") {
       context.beginPath();
       context.moveTo(x, y);
     }
@@ -63,8 +79,13 @@ export const DrawingCanvas = ({ canvasId, isGroupMode }: DrawingCanvasProps) => 
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
-    if (activeTool === "draw") {
+    if (activeTool === "pen") {
+      context.globalCompositeOperation = "source-over";
       context.strokeStyle = activeColor;
+      context.lineTo(x, y);
+      context.stroke();
+    } else if (activeTool === "eraser") {
+      context.globalCompositeOperation = "destination-out";
       context.lineTo(x, y);
       context.stroke();
     }
@@ -77,6 +98,8 @@ export const DrawingCanvas = ({ canvasId, isGroupMode }: DrawingCanvasProps) => 
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
+    
+    context.globalCompositeOperation = "source-over";
     
     if (activeTool === "rectangle") {
       context.fillStyle = activeColor;
@@ -92,6 +115,22 @@ export const DrawingCanvas = ({ canvasId, isGroupMode }: DrawingCanvasProps) => 
     }
     
     setIsDrawing(false);
+  };
+
+  const handleTextSubmit = () => {
+    if (!context || !textInput.trim()) return;
+    
+    context.font = `${strokeSize * 6}px Arial`;
+    context.fillStyle = activeColor;
+    context.fillText(textInput, startPos.x, startPos.y);
+    
+    setTextInput("");
+    setIsTextMode(false);
+  };
+
+  const handleTextCancel = () => {
+    setTextInput("");
+    setIsTextMode(false);
   };
 
   const clearCanvas = () => {
@@ -114,9 +153,13 @@ export const DrawingCanvas = ({ canvasId, isGroupMode }: DrawingCanvasProps) => 
           color={activeColor} 
           onChange={setActiveColor} 
         />
+        <StrokeSizePicker
+          size={strokeSize}
+          onChange={setStrokeSize}
+        />
       </div>
       
-      <div className="flex justify-center">
+      <div className="flex justify-center relative">
         <div className="border-2 border-gray-200 rounded-lg shadow-inner bg-white">
           <canvas
             ref={canvasRef}
@@ -127,6 +170,34 @@ export const DrawingCanvas = ({ canvasId, isGroupMode }: DrawingCanvasProps) => 
             onMouseLeave={stopDrawing}
           />
         </div>
+        
+        {isTextMode && (
+          <div className="absolute bg-white border border-gray-300 rounded-lg p-4 shadow-lg"
+               style={{ left: startPos.x + 20, top: startPos.y + 20 }}>
+            <input
+              type="text"
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
+              placeholder="Enter text..."
+              className="border border-gray-300 rounded px-2 py-1 mb-2 w-full"
+              autoFocus
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={handleTextSubmit}
+                className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600"
+              >
+                Add
+              </button>
+              <button
+                onClick={handleTextCancel}
+                className="bg-gray-500 text-white px-3 py-1 rounded text-sm hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
       
       {isGroupMode && (

@@ -1,15 +1,17 @@
 
-import { Pen, Square, Circle, Trash2 } from "lucide-react";
+import { Pen, Square, Circle, Eraser, Type, Trash2 } from "lucide-react";
 
 interface ToolbarProps {
-  activeTool: "draw" | "rectangle" | "circle";
-  onToolChange: (tool: "draw" | "rectangle" | "circle") => void;
+  activeTool: "pen" | "eraser" | "text" | "rectangle" | "circle";
+  onToolChange: (tool: "pen" | "eraser" | "text" | "rectangle" | "circle") => void;
   onClear: () => void;
 }
 
 export const Toolbar = ({ activeTool, onToolChange, onClear }: ToolbarProps) => {
   const tools = [
-    { id: "draw" as const, icon: Pen, label: "Draw" },
+    { id: "pen" as const, icon: Pen, label: "Pen" },
+    { id: "eraser" as const, icon: Eraser, label: "Eraser" },
+    { id: "text" as const, icon: Type, label: "Text" },
     { id: "rectangle" as const, icon: Square, label: "Rectangle" },
     { id: "circle" as const, icon: Circle, label: "Circle" },
   ];
